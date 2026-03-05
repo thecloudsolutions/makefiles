@@ -1,0 +1,28 @@
+SHELL := /bin/bash
+
+MAKEFILES_DIR := .makefiles
+MAKEFILES_REF ?= main
+MAKEFILES_BASE := https://raw.githubusercontent.com/thecloudsolutions/makefiles/refs/heads/$(MAKEFILES_REF)
+
+README_TYPE ?= $(if $(wildcard .terraform-docs.yml),terraform,general)
+README_FILE := Makefile.readme.$(README_TYPE)
+
+ifneq ($(filter $(README_TYPE),terraform general),$(README_TYPE))
+$(error Invalid README_TYPE '$(README_TYPE)'. Use README_TYPE=terraform|general)
+endif
+
+COMPONENTS := Makefile.install $(README_FILE) Makefile.target Makefile.clean Makefile.help
+
+# Download a file only if it's missing
+define ensure_component
+$(shell mkdir -p $(MAKEFILES_DIR) && \
+  test -f $(MAKEFILES_DIR)/$(1) || \
+  curl -fsSL -o $(MAKEFILES_DIR)/$(1) $(MAKEFILES_BASE)/$(1))
+endef
+$(foreach c,$(COMPONENTS),$(eval $(call ensure_component,$(c))))
+
+include $(MAKEFILES_DIR)/Makefile.install
+include $(MAKEFILES_DIR)/$(README_FILE)
+include $(MAKEFILES_DIR)/Makefile.target
+include $(MAKEFILES_DIR)/Makefile.clean
+include $(MAKEFILES_DIR)/Makefile.help

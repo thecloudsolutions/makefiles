@@ -1,0 +1,9 @@
+SHELL := /bin/bash
+
+export README_YAML ?= README.yaml
+
+readme: install-gomplate ## Recreate the README.md
+	@gomplate --file README.md.gotmpl --out README.md
+	@echo "Generated README.md"
+
+.PHONY: readme

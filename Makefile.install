@@ -1,0 +1,73 @@
+SHELL := /bin/bash
+
+# Versions
+TERRAFORM_DOCS_VERSION ?= v0.21.0
+GOMPLATE_VERSION       ?= latest
+
+# Detect (lowercase) OS/ARCH
+UNAME_S := $(shell uname -s | tr '[:upper:]' '[:lower:]')
+UNAME_M := $(shell uname -m | tr '[:upper:]' '[:lower:]')
+
+# OS -> darwin|linux|windows
+OS := $(strip \
+  $(if $(filter $(UNAME_S),darwin),darwin, \
+    $(if $(filter $(UNAME_S),linux),linux, \
+      $(if $(findstring mingw,$(UNAME_S))$(findstring msys,$(UNAME_S))$(findstring cygwin,$(UNAME_S)),windows,linux) \
+    ) \
+  ) \
+)
+
+# ARCH -> amd64|arm64
+ARCH := $(strip \
+  $(if $(filter $(UNAME_M),x86_64 amd64),amd64, \
+    $(if $(filter $(UNAME_M),aarch64 arm64),arm64,$(UNAME_M)) \
+  ) \
+)
+
+EXE         := $(if $(filter windows,$(OS)),.exe,)
+INSTALL_DIR ?= $(if $(filter windows,$(OS)),$(HOME)/bin,/usr/local/bin)
+CURL 		:= curl -fsSL
+
+# --- Build URLs at make-time (not in the shell) ---
+GOMPLATE_RELEASE_PATH := $(if $(filter $(GOMPLATE_VERSION),latest),releases/latest/download,releases/$(GOMPLATE_VERSION)/download)
+GOMPLATE_URL := https://github.com/hairyhenderson/gomplate/$(GOMPLATE_RELEASE_PATH)/gomplate_$(OS)-$(ARCH)$(EXE)
+
+TERRAFORM_DOCS_URL := $(strip $(if $(filter windows,$(OS)), \
+https://github.com/terraform-docs/terraform-docs/releases/download/$(TERRAFORM_DOCS_VERSION)/terraform-docs-$(TERRAFORM_DOCS_VERSION)-windows-$(ARCH).zip, \
+https://github.com/terraform-docs/terraform-docs/releases/download/$(TERRAFORM_DOCS_VERSION)/terraform-docs-$(TERRAFORM_DOCS_VERSION)-$(OS)-$(ARCH).tar.gz))
+
+# ---- Installers ----
+
+install-gomplate: ## Install gomplate binary
+	@if ! command -v gomplate >/dev/null 2>&1 && [ ! -x "$(INSTALL_DIR)/gomplate$(EXE)" ]; then \
+	  set -e; mkdir -p "$(INSTALL_DIR)"; \
+	  if [ "$(OS)" = "windows" ]; then \
+	    $(CURL) -o gomplate.exe "$(GOMPLATE_URL)"; \
+	    chmod +x gomplate.exe; mv gomplate.exe "$(INSTALL_DIR)/gomplate.exe"; \
+	  else \
+	    $(CURL) -o gomplate "$(GOMPLATE_URL)"; \
+	    chmod +x gomplate; \
+	    if command -v sudo >/dev/null 2>&1; then sudo mv gomplate "$(INSTALL_DIR)/gomplate"; else mv gomplate "$(INSTALL_DIR)/gomplate"; fi; \
+	  fi; \
+	  echo "✓ Installed gomplate to $(INSTALL_DIR)"; \
+	fi
+
+install-terraform-docs: ## Install terraform-docs binary
+	@if ! command -v terraform-docs >/dev/null 2>&1 && [ ! -x "$(INSTALL_DIR)/terraform-docs$(EXE)" ]; then \
+	  set -e; mkdir -p "$(INSTALL_DIR)"; \
+	  if [ "$(OS)" = "windows" ]; then \
+	    $(CURL) -o terraform-docs.zip "$(TERRAFORM_DOCS_URL)"; \
+	    unzip -o terraform-docs.zip terraform-docs.exe >/dev/null; rm -f terraform-docs.zip; \
+	    chmod +x terraform-docs.exe; mv terraform-docs.exe "$(INSTALL_DIR)/terraform-docs.exe"; \
+	  else \
+	    $(CURL) -o terraform-docs.tgz "$(TERRAFORM_DOCS_URL)"; \
+	    tar -xzf terraform-docs.tgz terraform-docs; rm -f terraform-docs.tgz; \
+	    chmod +x terraform-docs; \
+	    if command -v sudo >/dev/null 2>&1; then sudo mv terraform-docs "$(INSTALL_DIR)/terraform-docs"; else mv terraform-docs "$(INSTALL_DIR)/terraform-docs"; fi; \
+	  fi; \
+	  echo "✓ Installed terraform-docs to $(INSTALL_DIR)"; \
+	fi
+
+install: install-gomplate install-terraform-docs ## Install all binaries
+
+.PHONY: install install-gomplate install-terraform-docs

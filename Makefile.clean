@@ -1,0 +1,4 @@
+clean: ## Clean downloaded Makefiles
+	rm -rf .makefiles
+
+.PHONY: clean

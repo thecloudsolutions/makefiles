@@ -1,0 +1,11 @@
+target: ## Recreate the targets.md
+	@mkdir -p docs
+	@{ \
+		echo '<!-- markdownlint-disable -->'; \
+		echo '## Makefile Targets'; \
+		echo '```text'; \
+		echo 'Available targets:'; \
+		$(MAKE) -s help | tail; \
+		echo '```'; \
+		echo '<!-- markdownlint-restore -->'; \
+	} > docs/targets.md

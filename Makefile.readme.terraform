@@ -1,0 +1,23 @@
+SHELL := /bin/bash
+
+export README_YAML ?= README.yaml
+
+# Detect OS for sed compatibility
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    SED_INPLACE := sed -i ''
+else
+    SED_INPLACE := sed -i
+endif
+
+readme: install ## Recreate the README.md
+	@mkdir -p docs
+	@if [ -f .terraform-docs.yml ]; then \
+		terraform-docs . > docs/terraform.md; \
+	fi
+	@$(SED_INPLACE) 's/^      //g' docs/terraform.md
+	@$(SED_INPLACE) 's|git@github.com:thecloudsolutions|thecloudsolutions|g' docs/terraform.md
+	@gomplate --file README.md.gotmpl --out README.md
+	@echo "Generated README.md"
+
+.PHONY: readme
