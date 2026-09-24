@@ -16,7 +16,7 @@ readme: install ## Recreate the README.md
 		terraform-docs . > docs/terraform.md; \
 	fi
 	@$(SED_INPLACE) 's/^      //g' docs/terraform.md
-	@$(SED_INPLACE) 's|git@github.com:thecloudsolutions|thecloudsolutions|g' docs/terraform.md
+	@$(SED_INPLACE) 's|git@github.com:thecloudsolutions|git::https://github.com/thecloudsolutions|g' docs/terraform.md
 	@gomplate --file README.md.gotmpl --out README.md
 	@echo "Generated README.md"
 
